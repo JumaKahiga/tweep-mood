@@ -3,16 +3,13 @@ import re
 from django.db import connection
 
 import matplotlib.pyplot as plt
-import nltk
 import numpy as np
 import pandas as pd
 
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from nltk.stem.porter import PorterStemmer
-from nltk.tokenize import word_tokenize
 from textblob import TextBlob
-from wordcloud import WordCloud, STOPWORDS
+from wordcloud import WordCloud
 
 
 class TweetProcessor:
@@ -50,7 +47,7 @@ class TweetProcessor:
     def word_cloud(self, df):
         plt.subplots(figsize=(12, 10))
         wordcloud_ = WordCloud(
-            background_color='blue',
+            background_color='white',
             width=1000,
             height=800).generate(' '.join(df['clean_tweets']))
 
@@ -81,11 +78,35 @@ if __name__ == '__main__':
     df = instance.retrieve_tweets()
     new_df = instance.clean_tweets(df)
 
-    instance.word_cloud(new_df)
-
     new_df['Sentiment'] = np.array(
-        [instance.sentiment(x) for x in new_df['clean_tweets']]
+        [instance.sentiment_analyzer(x) for x in new_df['clean_tweets']])
 
-    instance.word_cloud(new_df)
     instance.save_to_csv(new_df)
 
+    positive = [t for i, t in enumerate(
+        new_df['clean_tweets']) if new_df['Sentiment'][i] > 0]
+
+    negative = [t for i, t in enumerate(
+        new_df['clean_tweets']) if new_df['Sentiment'][i] < 0]
+
+    neutral = [t for i, t in enumerate(
+        new_df['clean_tweets']) if new_df['Sentiment'][i] == 0]
+
+    positive_percent = round(
+        100 * (len(positive) / len(new_df['clean_tweets'])))
+    negative_percent = round(
+        100 * (len(negative) / len(new_df['clean_tweets'])))
+    neutral_percent = round(
+        100 * (len(neutral) / len(new_df['clean_tweets'])))
+
+    print(f'Positive Tweets: {positive_percent}% \n')
+    print(f'Negative Tweets: {negative_percent}% \n')
+    print(f'Neutral Tweets: {neutral_percent}% \n')
+
+    sentiment_results = [positive_percent, negative_percent, neutral_percent]
+    labels = ['positive', 'negative', 'neutral']
+
+    plt.pie(sentiment_results, labels=labels, startangle=90, autopct='%.1f%%')
+    plt.show()
+
+    instance.word_cloud(new_df)

@@ -58,8 +58,14 @@ class TweetListener(tweepy.StreamListener):
                 retweet_count = raw_data['retweet_count']
                 location = raw_data['user']['location']
 
-                # tweet_dict = TweetObject(
-                #     username, tweet, created_at, retweet_count, location).toDict()
+                tweet_dict = TweetObject(
+                    username, tweet, created_at, retweet_count, location).toDict()
+
+                kafka_producer_ = connect_kafka_producer()
+                publish_message(kafka_producer_, 'raw_tweets', 'raw', tweet_dict['tweet'])
+
+                if not kafka_producer_:
+                    kafka_producer_.close()
 
                 with connection.cursor() as cursor:
                     cursor.execute(""" INSERT INTO
@@ -81,18 +87,6 @@ if __name__ == '__main__':
     stream = tweepy.Stream(auth, listener=listener)
     print('starting............')
 
-    kafka_producer_ = connect_kafka_producer()
-    man = [{'a': 1}, {'b': 2}]
-
-    for i in man:
-        print(i.values())
-        publish_message(kafka_producer_, 'raw_tweets', 'raw', 'a sample')
-
-    if kafka_producer_ is not None:
-        kafka_producer_.close()
-
     filter_words = ['kenya', 'nairobi']
 
     stream.filter(track=filter_words, languages = ['en'])
-
-
