@@ -11,6 +11,9 @@ from nltk.stem import WordNetLemmatizer
 from textblob import TextBlob
 from wordcloud import WordCloud
 
+from .kafka_producer import (
+    publish_message, connect_kafka_producer)
+
 
 class TweetProcessor:
     def retrieve_tweets(self):
@@ -82,6 +85,11 @@ if __name__ == '__main__':
         [instance.sentiment_analyzer(x) for x in new_df['clean_tweets']])
 
     instance.save_to_csv(new_df)
+
+    kafka_producer_ = connect_kafka_producer()
+
+    for t in new_df['clean_tweets']:
+        publish_message(kafka_producer_, 'clean_tweets', 'clean', t)
 
     positive = [t for i, t in enumerate(
         new_df['clean_tweets']) if new_df['Sentiment'][i] > 0]
